@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تجهيز الكتاب للطباعة</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700&display=swap');
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background-color: #f7fafc;
+        }
+        .drop-zone {
+            border: 2px dashed #4a5568;
+            transition: all 0.3s ease;
+        }
+        .drop-zone:hover {
+            border-color: #2d3748;
+            background-color: #edf2f7;
+        }
+        .loading {
+            display: none;
+        }
+        .processing .loading {
+            display: block;
+        }
+        .processing .upload-text {
+            display: none;
+        }
+        #result-section {
+            display: none;
+        }
+        .sub-options {
+            display: none;
+        }
+        .sub-options.active {
+            display: block;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <div class="bg-white rounded-lg shadow-xl p-8">
+                <h1 class="text-3xl font-bold text-center mb-8 text-gray-800">تجهيز الملف للطباعة</h1>
+                
+                <div id="alert" class="hidden mb-4 p-4 rounded"></div>
+
+                <form id="uploadForm" class="space-y-6">
+                    <!-- اختيار نوع الملف -->
+                    <div class="mb-6">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">نوع الملف:</label>
+                        <div class="flex gap-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="fileType" value="document" class="form-radio" checked>
+                                <span class="mr-2">مستند</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="fileType" value="magazine" class="form-radio">
+                                <span class="mr-2">مجلة</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="fileType" value="other" class="form-radio">
+                                <span class="mr-2">أخرى</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- خيارات المستند -->
+                    <div id="documentOptions" class="sub-options active">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">لغة المستند:</label>
+                        <div class="flex gap-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="documentLanguage" value="arabic" class="form-radio" checked>
+                                <span class="mr-2">عربي</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="documentLanguage" value="english" class="form-radio">
+                                <span class="mr-2">إنجليزي</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- خيارات المجلة -->
+                    <div id="magazineOptions" class="sub-options">
+                        <label class="block text-gray-700 text-sm font-bold mb-2">نوع المعالجة:</label>
+                        <div class="flex gap-4">
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="magazineType" value="printAndFlip" class="form-radio" checked>
+                                <span class="mr-2">اطبع واقلب</span>
+                            </label>
+                            <label class="inline-flex items-center">
+                                <input type="radio" name="magazineType" value="twoOperations" class="form-radio">
+                                <span class="mr-2">عمليتين</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="drop-zone rounded-lg p-8 text-center cursor-pointer" id="dropZone">
+                        <div class="upload-text">
+                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                            </svg>
+                            <div class="mt-4 flex text-sm text-gray-600 justify-center">
+                                <label for="file-upload" class="relative cursor-pointer rounded-md font-medium text-indigo-600 hover:text-indigo-500 focus-within:outline-none">
+                                    <span>اختر ملف PDF</span>
+                                    <input id="file-upload" name="file" type="file" class="sr-only" accept=".pdf">
+                                </label>
+                                <p class="pr-1">أو اسحب الملف هنا</p>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">PDF فقط</p>
+                        </div>
+                        <div class="loading">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                            <div class="w-full bg-gray-200 rounded-full h-2.5 mb-4">
+                                <div id="progress-bar" class="bg-indigo-600 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                            <p id="progress-text" class="mt-2 text-gray-600">جاري معالجة الملف... 0%</p>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <button type="submit" id="submitBtn" class="bg-indigo-600 text-white px-6 py-2 rounded-md hover:bg-indigo-700 transition-colors">
+                            معالجة الملف
+                        </button>
+                    </div>
+                </form>
+
+                <div id="result-section" class="mt-6 text-center">
+                    <p id="success-message" class="text-green-600 mb-4"></p>
+                    <a id="download-link" href="#" class="bg-green-600 text-white px-6 py-2 rounded-md hover:bg-green-700 transition-colors inline-block">
+                        تحميل الملف المعالج
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('file-upload');
+        const form = document.getElementById('uploadForm');
+        const alert = document.getElementById('alert');
+        const resultSection = document.getElementById('result-section');
+        const successMessage = document.getElementById('success-message');
+        const downloadLink = document.getElementById('download-link');
+        const progressBar = document.getElementById('progress-bar');
+        const progressText = document.getElementById('progress-text');
+
+        // إدارة عرض الخيارات الفرعية
+        const fileTypeRadios = document.getElementsByName('fileType');
+        const documentOptions = document.getElementById('documentOptions');
+        const magazineOptions = document.getElementById('magazineOptions');
+
+        fileTypeRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                documentOptions.classList.remove('active');
+                magazineOptions.classList.remove('active');
+                
+                if (e.target.value === 'document') {
+                    documentOptions.classList.add('active');
+                } else if (e.target.value === 'magazine') {
+                    magazineOptions.classList.add('active');
+                }
+            });
+        });
+
+        // Drag and drop functionality
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight(e) {
+            dropZone.classList.add('bg-gray-100');
+        }
+
+        function unhighlight(e) {
+            dropZone.classList.remove('bg-gray-100');
+        }
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            fileInput.files = files;
+            updateFileName(files[0]);
+        }
+
+        function showAlert(message, type) {
+            alert.textContent = message;
+            alert.className = `mb-4 p-4 rounded ${type === 'error' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            alert.classList.remove('hidden');
+        }
+
+        function updateFileName(file) {
+            if (file) {
+                const uploadText = dropZone.querySelector('.upload-text p:not(.text-xs)');
+                uploadText.textContent = `الملف المختار: ${file.name}`;
+            }
+        }
+
+        fileInput.addEventListener('change', (e) => {
+            updateFileName(e.target.files[0]);
+        });
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const file = fileInput.files[0];
+            if (!file) {
+                showAlert('الرجاء اختيار ملف PDF', 'error');
+                return;
+            }
+
+            dropZone.classList.add('processing');
+            alert.className = 'hidden';
+            resultSection.style.display = 'none';
+            
+            try {
+                // Reset progress
+                updateProgress(0);
+                
+                // Start progress monitoring
+                const filename = file.name;
+                const progressInterval = startProgressMonitoring(filename);
+                
+                const response = await fetch('/', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                // Stop progress monitoring
+                clearInterval(progressInterval);
+                
+                if (result.status === 'success') {
+                    updateProgress(100);
+                    showAlert(result.message, 'success');
+                    successMessage.textContent = result.message;
+                    downloadLink.href = result.download_url;
+                    resultSection.style.display = 'block';
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                showAlert(error.message, 'error');
+            } finally {
+                dropZone.classList.remove('processing');
+            }
+        });
+
+        function updateProgress(percent) {
+            progressBar.style.width = `${percent}%`;
+            progressText.textContent = `جاري معالجة الملف... ${percent}%`;
+        }
+
+        function startProgressMonitoring(filename) {
+            return setInterval(async () => {
+                try {
+                    const response = await fetch(`/progress/${encodeURIComponent(filename)}`);
+                    const data = await response.json();
+                    updateProgress(data.progress);
+                } catch (error) {
+                    console.error('Error fetching progress:', error);
+                }
+            }, 500); // تحديث كل 500 مللي ثانية
+        }
+    </script>
+</body>
+</html>
